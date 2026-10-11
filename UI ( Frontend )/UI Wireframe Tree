@@ -1,0 +1,72 @@
+[ ỨNG DỤNG NGÂN HÀNG (MAIN APP) ]
+ ├── 1. MÀN HÌNH XÁC THỰC & TÀI KHOẢN (AUTH SCREEN)
+ │    ├── 1.1. Form Đăng nhập (Login)
+ │    │    ├── Ô nhập: Tên đăng nhập / Số điện thoại / Email
+ │    │    ├── Ô nhập: Mật khẩu (Ẩn ký tự)
+ │    │    ├── Nút: [ Đăng nhập ]
+ │    │    ├── Liên kết: [ Quên mật khẩu? ] ---> (Chuyển sang 1.3)
+ │    │    └── Liên kết: [ Chưa có tài khoản? Đăng ký ngay ] ---> (Chuyển sang 1.2)
+ │    │
+ │    ├── 1.2. Form Đăng ký (Register)
+ │    │    ├── Ô nhập: Họ và tên
+ │    │    ├── Ô nhập: Tên đăng nhập
+ │    │    ├── Ô nhập: Mật khẩu & Xác nhận mật khẩu
+ │    │    ├── Ô nhập: Số điện thoại / Email
+ │    │    ├── Nút: [ Đăng ký tài khoản ] ---> (Lưu DB + Băm mật khẩu SHA-256)
+ │    │    └── Nút: [ Quay lại Đăng nhập ]
+ │    │
+ │    └── 1.3. Form Quên mật khẩu (Forgot Password)
+ │         ├── Ô nhập: Nhập Email hoặc Số điện thoại đã đăng ký
+ │         ├── Nút: [ Gửi mã xác nhận ]
+ │         └── Nút: [ Đặt lại mật khẩu mới ]
+ │
+ ├── 2. MÀN HÌNH CHÍNH / BẢNG ĐIỀU KHIỂN (MAIN DASHBOARD)
+ │    ├── 2.1. Khu vực Thông tin cá nhân (Header)
+ │    │    ├── Hiển thị: Xin chào, [Tên khách hàng]
+ │    │    └── Nút: [ Đổi mật khẩu ] ---> (Mở Pop-up / Màn hình phụ Đổi mật khẩu)
+ │    │    └── Nút: [ Đăng xuất ] ---> (Quay lại 1.1)
+ │    │
+ │    ├── 2.2. Khu vực Tổng quan tài sản
+ │    │    ├── Tổng số dư các tài khoản
+ │    │    └── Trạng thái hạn mức tín dụng
+ │    │
+ │    └── 2.3. Menu Chức năng chính (Dashboard Grid / List)
+ │         ├── Nút/Card: [ Chuyển tiền ] ---------> (Dẫn đến 3.1)
+ │         ├── Nút/Card: [ Nạp / Rút tiền ] ------> (Dẫn đến 3.2 & 3.3)
+ │         ├── Nút/Card: [ Sổ tiết kiệm ] --------> (Dẫn đến 4.1)
+ │         ├── Nút/Card: [ Khoản vay / Cho vay ] -> (Dẫn đến 4.2)
+ │         └── Nút/Card: [ Quản lý Thẻ / Tín dụng ] -> (Dẫn đến 4.3)
+ │
+ ├── 3. NHÓM NGHIỆP VỤ GIAO DỊCH (TRANSACTION MODULE)
+ │    ├── 3.1. Màn hình Chuyển tiền (Transfer)
+ │    │    ├── Chọn/Nhập: Tài khoản nguồn (Tài khoản thanh toán của bạn)
+ │    │    ├── Nhập: Số tài khoản thụ hưởng (Đích) & Ngân hàng
+ │    │    ├── Nhập: Số tiền chuyển
+ │    │    ├── Nhập: Nội dung chuyển khoản
+ │    │    └── Nút: [ Xác nhận chuyển tiền ] ---> (Kiểm tra số dư + Cập nhật SQLite + Lưu Lịch sử)
+ │    │
+ │    ├── 3.2. Màn hình Nạp tiền (Deposit)
+ │    │    ├── Chọn: Tài khoản nhận tiền
+ │    │    ├── Nhập: Số tiền cần nạp
+ │    │    └── Nút: [ Xác nhận nạp tiền ] ---> (Cộng dồn số dư vào DB)
+ │    │
+ │    └── 3.3. Màn hình Rút tiền (Withdraw)
+ │         ├── Chọn: Tài khoản nguồn
+ │         ├── Nhập: Số tiền cần rút (Kiểm tra điều kiện: Số dư >= Số tiền rút)
+ │         └── Nút: [ Xác nhận rút tiền ] ---> (Trừ số dư trong DB)
+ │
+ └── 4. NHÓM SẢN PHẨM TÀI CHÍNH & TÍN DỤNG (FINANCIAL SERVICES)
+      ├── 4.1. Quản lý Sổ tiết kiệm (Savings Management)
+      │    ├── Danh sách các sổ tiết kiệm đang có (Hiển thị số tiền, kỳ hạn, lãi suất)
+      │    ├── Nút: [ Mở sổ tiết kiệm mới ] (Chọn kỳ hạn: Không kỳ hạn / Có kỳ hạn 1,3,6,12 tháng)
+      │    └── Nút: [ Tất toán / Rút lãi ]
+      │
+      ├── 4.2. Quản lý Khoản vay / Cho vay (Loan Management)
+      │    ├── Danh sách khoản vay đang nợ (Dư nợ gốc, lãi suất, hạn trả)
+      │    ├── Nút: [ Đăng ký khoản vay mới ]
+      │    └── Nút: [ Thanh toán tiền trả góp hàng tháng / Trả nợ gốc ]
+      │
+      └── 4.3. Quản lý Thẻ & Tài khoản tín dụng (Credit & Cards)
+           ├── Hiển thị: Hạn mức tín dụng, Dư nợ hiện tại đã chi tiêu
+           ├── Nút: [ Chi tiêu / Quẹt thẻ tín dụng ]
+           └── Nút: [ Thanh toán sao kê dư nợ tín dụng ]
