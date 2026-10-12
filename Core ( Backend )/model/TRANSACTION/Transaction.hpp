@@ -2,9 +2,10 @@
 #define TRANSACTION_HPP
 
 #include<string>
-#include"C:\Users\Thinkpad\OneDrive\文档\BTL_OOP\Core ( Backend )\model\ACCOUNT\Account.hpp"
-#include"C:\Users\Thinkpad\OneDrive\文档\BTL_OOP\Core ( Backend )\database\TursoDB.hpp"
+#include "../Account/Account.hpp"
+#include "../../database/TursoDB.hpp" 
 
+// phan xac thuc xu dung a pin voi otp dung ben file authsecurity
 
 
 #endif
