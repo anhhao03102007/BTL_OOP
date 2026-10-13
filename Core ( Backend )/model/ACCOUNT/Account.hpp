@@ -24,7 +24,8 @@ class Term_Savings_Account : public Account{
     private :
        int term_month;
        int savings_id;
-       std::map<int,double> Deposit_Term_AND_Interest_Rate;
+       int Deposit_term;
+       double interest_Rate;
        std::string maturity_option;
     public :
 
