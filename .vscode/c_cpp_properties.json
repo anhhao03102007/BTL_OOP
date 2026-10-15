@@ -5,11 +5,16 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "C:/msys64/mingw64/include",
-                "C:/msys64/ucrt64/include"
+                "C:/msys64/ucrt64/include",
+                "C:/Qt/6.12.0/mingw_64/include",
+                "C:/Qt/6.12.0/mingw_64/include/QtCore",
+                "C:/Qt/6.12.0/mingw_64/include/QtWidgets",
+                "C:/Qt/6.12.0/mingw_64/include/QtGui"
             ],
             "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
             "cStandard": "c17",
-            "cppStandard": "c++17"
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x64"
         }
     ],
     "version": 4
