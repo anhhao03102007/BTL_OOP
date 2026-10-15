@@ -3,7 +3,7 @@
 
 #include<string>
 #include<map>
-#include "../../database/TursoDB.hpp"
+
 class Account {
     private : 
         std::string user_id;
@@ -12,9 +12,10 @@ class Account {
         std::string currency;
         std::string account_type;
         int status;
+    public :
 };
 
-class Savings_Account :public Account{
+class Savings_Account : public Account{
     private :
         double Interest_rate;
     

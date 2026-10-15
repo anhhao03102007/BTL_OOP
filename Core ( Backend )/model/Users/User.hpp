@@ -15,19 +15,22 @@ class User {
         std::string role;
         std::string status;
     public :
-       virtual void input();
+       std::string getUserID();
 };
 
 class Customer : public User {
     private : 
+
 };
 
 
 class Teller : public User {
+    private:
 
 };
 
 class Admin : public User {
+    private :
 
 };
 
