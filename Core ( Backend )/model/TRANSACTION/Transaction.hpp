@@ -77,6 +77,7 @@ public:
           receiver_account_id(std::move(receiver)), 
           amount(amt), 
           description(std::move(desc)) {}
+    virtual bool execute();
 
     virtual ~Transaction() = default;
 
@@ -112,6 +113,8 @@ public:
         this->fee = calculateFee(); // Tự động tính phí khi khởi tạo
     }
 
+    bool execute() override ;
+
     double calculateFee() const override {
         if (target_bank == BankCode::OOPBANK) {
             return 0.0; // Miễn phí chuyển tiền nội bộ
@@ -140,6 +143,7 @@ public:
     {
         this->fee = calculateFee(); // Tự động tính phí khi khởi tạo
     }
+    bool execute() override ;
 
     double calculateFee() const override {
         if (atm_bank == BankCode::OOPBANK) {
@@ -165,6 +169,8 @@ public:
     {
         this->fee = calculateFee(); // Tự động tính phí khi khởi tạo
     }
+
+    bool execute() override;
 
     double calculateFee() const override {
         return 0.0; // Nạp tiền miễn phí

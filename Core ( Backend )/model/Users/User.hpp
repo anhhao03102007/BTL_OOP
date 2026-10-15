@@ -3,7 +3,7 @@
 
 #include<string>
 
-class User {
+class UserModel {
     private :
         std::string user_id;
         std::string user_name;
@@ -18,18 +18,18 @@ class User {
        std::string getUserID();
 };
 
-class Customer : public User {
+class Customer : public UserModel {
     private : 
 
 };
 
 
-class Teller : public User {
+class Teller : public UserModel {
     private:
 
 };
 
-class Admin : public User {
+class Admin : public UserModel {
     private :
 
 };
