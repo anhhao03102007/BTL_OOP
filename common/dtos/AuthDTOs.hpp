@@ -45,7 +45,7 @@ struct UserSessionDTO {
 struct LoginResult {
     bool success = false;
     std::string message;
-    std::optional<UserSessionDTO> session; // Trả về JSON dưới dạng object hoặc null nếu thất bại
+    std::optional<UserSessionDTO> session; // Trả về JSON dạng object hoặc null nếu thất bại
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(
         LoginResult, 
@@ -86,7 +86,7 @@ struct RegisterResult {
     bool success = false;
     std::string message;
     std::string created_user_id;
-    std::string default_account_id; // STK thanh toán tự động cấp cho người dùng mới ( dung ham tao ma otp tao ngau nhien chuoi 10 so lam ma tai khoan)
+    std::string default_account_id; // STK thanh toán tự động cấp (chuỗi 10 số ngẫu nhiên)
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(
         RegisterResult, 
@@ -97,6 +97,60 @@ struct RegisterResult {
     )
 };
 
-} //
+// =============================================================
+// 3. STRUCT QUÊN MẬT KHẨU & ĐẶT LẠI MẬT KHẨU (FORGOT / RESET PASS)
+// =============================================================
+
+// BƯỚC 1: Yêu cầu gửi mã xác nhận OTP quên mật khẩu
+struct ForgotPasswordRequest {
+    std::string identifier; // Username, Email, Số điện thoại hoặc CCCD
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        ForgotPasswordRequest,
+        identifier
+    )
+};
+
+// Phản hồi sau khi kiểm tra định danh và khởi tạo mã OTP
+struct ForgotPasswordResult {
+    bool success = false;
+    std::string message;
+    std::string masked_destination; // SĐT/Email đã che (VD: "098***1234" hoặc "us***@gmail.com")
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        ForgotPasswordResult,
+        success,
+        message,
+        masked_destination
+    )
+};
+
+// BƯỚC 2: Yêu cầu xác nhận OTP và thiết lập mật khẩu mới
+struct ResetPasswordRequest {
+    std::string identifier;
+    std::string otp_code;      // Mã OTP 6 chữ số
+    std::string new_password;  // Mật khẩu mới
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        ResetPasswordRequest,
+        identifier,
+        otp_code,
+        new_password
+    )
+};
+
+// Kết quả thực thi đặt lại mật khẩu
+struct ResetPasswordResult {
+    bool success = false;
+    std::string message;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        ResetPasswordResult,
+        success,
+        message
+    )
+};
+
+} // namespace Banking
 
 #endif // AUTH_DTOS_HPP

@@ -12,12 +12,12 @@ namespace Banking {
 // ============================================================================
 struct LoanScheduleItem {
     int period_number = 0;              // Kỳ thứ (1, 2, 3...)
-    std::string due_date;              // Ngày đến hạn (YYYY-MM-DD)
+    std::string due_date;               // Ngày đến hạn (YYYY-MM-DD)
     double principal_due = 0.0;         // Tiền gốc phải trả kỳ này
     double interest_due = 0.0;          // Tiền lãi phải trả kỳ này
     double total_due = 0.0;             // Tổng tiền phải trả kỳ này (Gốc + Lãi)
     double remaining_principal = 0.0;   // Dư nợ gốc còn lại sau kỳ này
-    std::string status = "UNPAID";     // Trạng thái: "UNPAID", "PAID", "OVERDUE"
+    std::string status = "UNPAID";      // Trạng thái: "UNPAID", "PAID", "OVERDUE"
 
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(
         LoanScheduleItem, 
@@ -37,11 +37,11 @@ struct LoanScheduleItem {
 struct CreateLoanRequest {
     std::string customer_id;           // Mã khách hàng
     std::string account_id;            // Mã tài khoản thanh toán nhận giải ngân
-    std::string loan_type;             // Loại vay: "CONSUMER" (Tiêu dùng), "MORTGAGE" (Thế chấp), "BUSINESS"
+    std::string loan_type;             // Loại vay: "CONSUMER", "MORTGAGE", "BUSINESS"
     double principal_amount = 0.0;     // Số tiền đề nghị vay
     int term_months = 12;              // Kỳ hạn vay (tháng)
     double annual_interest_rate = 0.0; // Lãi suất %/năm
-    std::string interest_type;         // Phương thức tính lãi: "DECLINING_BALANCE" (Dư nợ giảm dần), "FLAT" (Cố định)
+    std::string interest_type;         // Phương thức tính lãi: "DECLINING_BALANCE", "FLAT"
     std::string purpose;               // Mục đích vay
     std::string pin_input;             // Mã PIN xác nhận
 
@@ -145,6 +145,84 @@ struct LoanOperationResult {
         remaining_loan_balance, 
         source_account_balance
     )
+};
+
+// ============================================================================
+// 6. DTO YÊU CẦU TRA CỨU DANH SÁCH KHOẢN VAY (Request từ Frontend JS)
+// ============================================================================
+struct GetLoansRequest {
+    std::string customer_id;           // Mã khách hàng cần tra cứu
+    std::string status_filter = "ALL"; // Lọc trạng thái: "ALL", "PENDING", "ACTIVE", "COMPLETED", "OVERDUE"
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        GetLoansRequest,
+        customer_id,
+        status_filter
+    )
+};
+
+// ============================================================================
+// 7. DTO KẾT QUẢ TRA CỨU DANH SÁCH KHOẢN VAY (Response về JS)
+// ============================================================================
+struct LoanListResult {
+    bool success = false;               // Trạng thái truy vấn
+    std::string message;                // Thông báo kết quả
+    size_t total_count = 0;             // Tổng số khoản vay tìm thấy
+    std::vector<LoanDetailDTO> loans;   // Danh sách chi tiết các khoản vay
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        LoanListResult,
+        success,
+        message,
+        total_count,
+        loans
+    )
+};
+namespace Banking {
+
+// ============================================================================
+// DTO YÊU CẦU DUYỆT / TỪ CHỐI KHOẢN VAY (Admin/Teller Request)
+// ============================================================================
+struct ApproveLoanRequest {
+    std::string admin_id;          // ID của Admin hoặc Teller thực hiện duyệt
+    std::string loan_id;           // Mã khoản vay cần xử lý
+    std::string action;            // "APPROVE" (Phê duyệt) hoặc "REJECT" (Từ chối)
+    std::string note;              // Ghi chú lý do duyệt/từ chối
+    std::string admin_pin;         // Mã PIN/Xác thực thao tác của Admin
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        ApproveLoanRequest,
+        admin_id,
+        loan_id,
+        action,
+        note,
+        admin_pin
+    )
+};
+
+// ============================================================================
+// DTO KẾT QUẢ XỬ LÝ DUYỆT KHOẢN VAY (Response về Bridge/UI)
+// ============================================================================
+struct LoanApprovalResult {
+    bool success = false;
+    std::string message;
+    std::string loan_id;
+    std::string new_status;              // "ACTIVE", "REJECTED"
+    double disbursed_amount = 0.0;       // Số tiền đã giải ngân (nếu APPROVE)
+    double customer_new_balance = 0.0;   // Số dư mới của tài khoản KH sau giải ngân
+    std::string timestamp;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
+        LoanApprovalResult,
+        success,
+        message,
+        loan_id,
+        new_status,
+        disbursed_amount,
+        customer_new_balance,
+        timestamp
+    )
+};
 };
 
 } // namespace Banking
