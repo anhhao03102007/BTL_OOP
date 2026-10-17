@@ -178,8 +178,6 @@ struct LoanListResult {
         loans
     )
 };
-namespace Banking {
-
 // ============================================================================
 // DTO YÊU CẦU DUYỆT / TỪ CHỐI KHOẢN VAY (Admin/Teller Request)
 // ============================================================================
@@ -223,7 +221,7 @@ struct LoanApprovalResult {
         timestamp
     )
 };
-};
+
 
 } // namespace Banking
 

@@ -2,7 +2,7 @@
 #include"AuthSecurity.hpp"
 using namespace YukiWorkshop::Crypto;
 
-static std::string generateSalt(size_t length = 16) {
+std::string generateSalt(size_t length = 16) {
         static const char charset[] =
             "0123456789"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -32,11 +32,10 @@ std::string AuthSecurity::hashPin(const std::string& PIN ){
     std::string hash_str = vectorToHexString(s.finalize());
     return hash_str;
 }
-static std::string generateOTP(size_t length = 6) {
-        // static giúp nguồn entropy phần cứng chỉ khởi tạo 1 lần
+std::string generateOTP(size_t length = 6) {
         static std::random_device rd;
         static std::mt19937 gen(rd());
-        std::uniform_int_distribution<int> dist(0, 9); // Sinh từng chữ số từ 0 đến 9
+        std::uniform_int_distribution<int> dist(0, 9); 
 
         std::string otp;
         otp.reserve(length);

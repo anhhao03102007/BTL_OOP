@@ -43,16 +43,6 @@ public:
         return BankCode::UNKNOWN;
     }
 };
-
-struct TransactionResult {
-    bool success = false;
-    std::string message;
-    std::string transaction_ref;
-    double fee_applied = 0.0;
-    double amount = 0.0;
-    double balance_after = 0.0;
-};
-
 // =============================================================
 // 1. LỚP CƠ SỞ TRANSACTION (ABSTRACT BASE CLASS)
 // =============================================================
@@ -66,8 +56,9 @@ protected:
     std::string status = "PENDING";
     std::string description;
 
-    static std::string generateTxnRef() {
-        return AuthSecurity::generateOTP(8);
+    std::string generateTxnRef() {
+        AuthSecurity authSec;
+        return authSec.generateOTP(8);
     }
 
 public:

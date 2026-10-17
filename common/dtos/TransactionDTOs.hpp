@@ -1,5 +1,5 @@
-#ifndef BANKING_DTOS_HPP
-#define BANKING_DTOS_HPP
+#ifndef TRANSACTION_DTOS_HPP
+#define TRANSACTION_DTOS_HPP
 
 #include <string>
 #include <vector>
@@ -78,6 +78,7 @@ struct TransferRequest {
     std::string sender_stk;
     std::string receiver_stk;
     std::string receiver_name;    // Tên người nhận đã được xác thực ở Bước 1
+    double balance=0.0;
     std::string target_bank = "OOPBANK";
     double amount = 0.0;          // Số tiền chuyển
     std::string description;      // Lời nhắn / Mô tả
@@ -89,6 +90,7 @@ struct TransferRequest {
         sender_stk, 
         receiver_stk, 
         receiver_name,
+        balance,
         target_bank, 
         amount, 
         description, 

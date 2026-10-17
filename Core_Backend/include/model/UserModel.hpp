@@ -4,7 +4,7 @@
 #include<string>
 
 class UserModel {
-    private :
+    protected:
         std::string user_id;
         std::string user_name;
         std::string password_hash;
@@ -15,22 +15,25 @@ class UserModel {
         std::string role;
         std::string status;
     public :
-       std::string getUserID();
+       std::string getUserID() { return user_id;}
+       std::string getUserName() { return user_name;}
+
+    
+       
 };
 
 class Customer : public UserModel {
-    private : 
+    
 
 };
 
 
 class Teller : public UserModel {
-    private:
+    
 
 };
 
 class Admin : public UserModel {
-    private :
 
 };
 

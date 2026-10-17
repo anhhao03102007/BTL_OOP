@@ -114,19 +114,5 @@ struct SavingsListResult {
     )
 };
 
-struct WithdrawSavingsRequest {
-    std::string user_id;
-    std::string savings_id;
-    std::string destination_stk;
-    std::string pin_input;
-
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        WithdrawSavingsRequest,
-        user_id,
-        savings_id,
-        destination_stk,
-        pin_input
-    )
-};
 }
 #endif // SAVINGS_DTOS_HPP
