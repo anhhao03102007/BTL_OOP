@@ -1,7 +1,10 @@
+import { createStaff } from "./staff.js";
+
 const app = document.querySelector("#app");
 
 const state = {
   loggedIn: true,
+  role: "CUSTOMER", // CUSTOMER | TELLER | ADMIN
   authMode: "login",
   page: "home",
   showBalance: true,
@@ -363,8 +366,11 @@ function sourceCard() {
   return `<aside class="source-card"><span class="eyebrow">Nguồn tiền</span><p>Tài khoản thanh toán</p><b>0123 6868 8888</b><hr /><p>Số dư khả dụng</p><strong>128.650.000 ₫</strong></aside>`;
 }
 
+const staff = createStaff({ state, icons, icon, brand, render: () => render() });
+
 function render() {
   if (!state.loggedIn) return renderAuth();
+  if (state.role !== "CUSTOMER") return staff.render();
   if (state.page === "home") return renderHome();
   if (state.page === "services") return renderServices();
   if (state.page === "accounts") return renderAccounts();
@@ -374,6 +380,7 @@ function render() {
 }
 
 app.addEventListener("click", (event) => {
+  if (staff.click(event)) return;
   const pageButton = event.target.closest("[data-page]");
   const authButton = event.target.closest("[data-auth-mode]");
   const actionButton = event.target.closest("[data-action]");
@@ -409,10 +416,12 @@ app.addEventListener("click", (event) => {
 
 app.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (staff.submit(event)) return;
   if (event.target.id === "auth-form") {
     if (state.authMode === "login") {
       state.loggedIn = true;
       state.page = "home";
+      staff.login(document.querySelector("#contact")?.value ?? "");
     } else {
       state.authMode = "login";
     }
