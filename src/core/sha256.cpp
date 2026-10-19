@@ -13,7 +13,7 @@
                        https://github.com/aperezdc/hmac-sha256
 
 */
-
+#pragma once
 #include "sha256.hpp"
 
 #define _SHA256_UNROLL

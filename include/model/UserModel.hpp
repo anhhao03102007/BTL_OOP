@@ -1,80 +1,126 @@
-#ifndef USER_HPP
-#define USER_HPP
+#ifndef USER_MODEL_HPP
+#define USER_MODEL_HPP
 
-#include<string>
+#include <string>
+#include <unordered_set>
 
-class UserModel {
-    protected:
-        std::string m_userId;          // Mã định danh duy nhất (VD: "USR1001")
-        std::string m_fullName;        // Họ và tên
-        std::string m_cccdNumber;      // Số CCCD / CMND (12 chữ số)
-        std::string m_phoneNumber;     // Số điện thoại
-        std::string m_email;           // Địa chỉ Email
-        std::string m_passwordHash;    // Chuỗi Hash SHA-256 của Mật khẩu
-        std::string m_pinHash;         // Chuỗi Hash SHA-256 của Mã PIN (6 số)
-        std::string m_role;            // Vai trò hệ thống: "CUSTOMER", "TELLER", "ADMIN"
-        std::string m_status;          // Trạng thái tài khoản: "ACTIVE", "BLOCKED"
+namespace Banking {
 
-    public :
-      UserModel() = default;
-
-    // Constructor phục vụ Hydrate dữ liệu từ CSDL (Repository)
-    UserModel(std::string userId, std::string fullName, std::string cccd,
-              std::string phone, std::string email, std::string passHash,
-              std::string pinHash, std::string role, std::string status)
-        : m_userId(std::move(userId)), m_fullName(std::move(fullName)),
-          m_cccdNumber(std::move(cccd)), m_phoneNumber(std::move(phone)),
-          m_email(std::move(email)), m_passwordHash(std::move(passHash)),
-          m_pinHash(std::move(pinHash)), m_role(std::move(role)),
-          m_status(std::move(status)) {}
-
-        // =========================================================================
-        // DOMAIN INVARIANTS & BUSINESS LOGIC (Thực thi quy tắc nghiệp vụ trên RAM)
-        // =========================================================================
-       bool verifyPassword(const std::string& rawPassword) const;
-       bool changePassword(const std::string& oldRawPass, const std::string& newRawPass);
-       bool changePin(const std::string& oldRawPin, const std::string& newRawPin);
-       void blockUser() { m_status = "BLOCKED"; }
-       void activateUser() { m_status = "ACTIVE"; }
-
-       // =========================================================================
-    // READ-ONLY GETTERS & SETTERS (Tính Đóng Gói / Encapsulation)
-    // =========================================================================
-    [[nodiscard]] const std::string& getUserId() const { return m_userId; }
-    [[nodiscard]] const std::string& getFullName() const { return m_fullName; }
-    [[nodiscard]] const std::string& getCccdNumber() const { return m_cccdNumber; }
-    [[nodiscard]] const std::string& getPhoneNumber() const { return m_phoneNumber; }
-    [[nodiscard]] const std::string& getEmail() const { return m_email; }
-    [[nodiscard]] const std::string& getRole() const { return m_role; }
-    [[nodiscard]] const std::string& getStatus() const { return m_status; }
-
-    // Dành riêng cho Mapper/Repository lưu vào CSDL
-    [[nodiscard]] const std::string& getPasswordHash() const { return m_passwordHash; }
-    [[nodiscard]] const std::string& getPinHash() const { return m_pinHash; }
-
-    void updateProfile(std::string fullName, std::string phone, std::string email) {
-        m_fullName = std::move(fullName);
-        m_phoneNumber = std::move(phone);
-        m_email = std::move(email);
-    }
+// Danh mục Quyền hạn trong hệ thống
+enum class Permission {
+    // Quyền Khách hàng
+    SELF_VIEW_PROFILE,
+    SELF_TRANSFER,
+    SELF_OPEN_SAVINGS,
+    SELF_APPLY_LOAN,
+    SELF_LOCK_ACCOUNT,
+    
+    // Quyền Giao dịch viên (Teller)
+    TELLER_COUNTER_CASH,       // Nạp/rút tiền quầy
+    TELLER_SEARCH_CUSTOMER,    // Tra cứu thông tin khách hàng
+    TELLER_OPEN_ACCOUNT,       // Mở tài khoản cho khách
+    TELLER_TOGGLE_USER_LOCK,   // Khóa/mở khóa tài khoản khách
+    TELLER_APPROVE_LOAN_SMALL, // Duyệt vay <= 100 Triệu VNĐ
+    
+    // Quyền Quản trị viên (Admin)
+    ADMIN_MANAGE_STAFF,        // Tạo/quản lý tài khoản nhân viên
+    ADMIN_APPROVE_LOAN_LARGE,  // Duyệt vay > 100 Triệu VNĐ
+    ADMIN_VIEW_AUDIT_LOG,      // Xem nhật ký hệ thống
+    ADMIN_SYSTEM_CONFIG        // Cấu hình phí & lãi suất
 };
 
-class Customer : public UserModel {
-    private :
-        
-         
+// =========================================================================
+// 1. BASE CLASS: User (Trừu tượng)
+// =========================================================================
+class User {
+protected:
+    std::string m_userId;
+    std::string m_username;
+    std::string m_passwordHash;
+    std::string m_salt;
+    std::string m_pinHash;
+    std::string m_fullName;
+    std::string m_email;
+    std::string m_phone;
+    std::string m_cccd;
+    std::string m_status; // "ACTIVE", "BLOCKED"
+    int         m_failedAttempts = 0; // Số lần đăng nhập sai từ CSDL
+    std::unordered_set<Permission> m_permissions;
 
+public:
+    User(std::string userId, std::string username, std::string passwordHash,
+         std::string salt, std::string fullName, std::string email,
+         std::string phone, std::string cccd, std::string status);
+
+    virtual ~User() = default;
+
+    // Fast Permission Guard
+    [[nodiscard]] bool hasPermission(Permission perm) const;
+    [[nodiscard]] bool isBlocked() const;
+    [[nodiscard]] bool isActive() const;
+
+    // Pure Virtual Functions
+    [[nodiscard]] virtual std::string getRole() const = 0;
+    [[nodiscard]] virtual bool canBeBlocked() const = 0; // Quy tắc an ninh
+
+    // Getters
+    [[nodiscard]] const std::string& getUserId() const;
+    [[nodiscard]] const std::string& getUsername() const;
+    [[nodiscard]] const std::string& getPasswordHash() const;
+    [[nodiscard]] const std::string& getSalt() const;
+    [[nodiscard]] const std::string& getFullName() const;
+    [[nodiscard]] const std::string& getEmail() const;
+    [[nodiscard]] const std::string& getPhone() const;
+    [[nodiscard]] const std::string& getCCCD() const;
+
+    void setPinHash(std::string pinHash);
+    [[nodiscard]] const std::string& getPinHash() const;
+
+    // Phương thức xác thực mã PIN 6 số
+    [[nodiscard]] bool verifyPin(const std::string& rawPin) const;
+    [[nodiscard]] int getFailedAttempts() const;
+    void setFailedAttempts(int attempts);
 };
 
+// =========================================================================
+// 2. DERIVED CLASS: CustomerUser (Khách hàng)
+// =========================================================================
+class CustomerUser : public User {
+public:
+    CustomerUser(std::string userId, std::string username, std::string passwordHash,
+                 std::string salt, std::string fullName, std::string email,
+                 std::string phone, std::string cccd, std::string status);
 
-class Teller : public UserModel {
-    private:
-
+    [[nodiscard]] std::string getRole() const override;
+    [[nodiscard]] bool canBeBlocked() const override;
 };
 
-class Admin : public UserModel {
-    private:
+// =========================================================================
+// 3. DERIVED CLASS: TellerUser (Giao dịch viên)
+// =========================================================================
+class TellerUser : public User {
+public:
+    TellerUser(std::string userId, std::string username, std::string passwordHash,
+               std::string salt, std::string fullName, std::string email,
+               std::string phone, std::string cccd, std::string status);
+
+    [[nodiscard]] std::string getRole() const override;
+    [[nodiscard]] bool canBeBlocked() const override;
 };
 
+// =========================================================================
+// 4. DERIVED CLASS: AdminUser (Quản trị viên)
+// =========================================================================
+class AdminUser : public User {
+public:
+    AdminUser(std::string userId, std::string username, std::string passwordHash,
+              std::string salt, std::string fullName, std::string email,
+              std::string phone, std::string cccd, std::string status);
 
-#endif
+    [[nodiscard]] std::string getRole() const override;
+    [[nodiscard]] bool canBeBlocked() const override;
+};
+
+} // namespace Banking
+
+#endif // USER_MODEL_HPP

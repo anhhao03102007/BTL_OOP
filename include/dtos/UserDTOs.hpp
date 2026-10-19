@@ -3,108 +3,63 @@
 
 #include <string>
 #include <vector>
-#include <Core_Backend/database/json.hpp>
+#include <core/json.hpp>
 
 namespace Banking {
 
-// =============================================================
-// 1. STRUCT THÔNG TIN HỒ SƠ NGƯỜI DÙNG (RESPONSE DTO)
-// =============================================================
+using json = nlohmann::json;
+
 struct UserProfileDTO {
     std::string user_id;
-    std::string full_name;
-    std::string cccd_number;
-    std::string phone_number;
+    std::string username;
+    std::string fullname;
     std::string email;
-    std::string address;
-    std::string role;               // "CUSTOMER", "TELLER", "ADMIN"
-    std::string status;             // "ACTIVE", "BLOCKED"
-    std::string primary_account_id; // Số tài khoản thanh toán mặc định
+    std::string phone;
+    std::string cccd;
+    std::string role;
+    std::string status;
+    std::string primary_account_id;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        UserProfileDTO,
-        user_id,
-        full_name,
-        cccd_number,
-        phone_number,
-        email,
-        address,
-        role,
-        status,
-        primary_account_id
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(UserProfileDTO, user_id, username, fullname, email, phone, cccd, role, status, primary_account_id)
 };
 
-// =============================================================
-// 2. STRUCT YÊU CẦU CẬP NHẬT THÔNG TIN CÁ NHÂN (REQUEST DTO)
-// =============================================================
 struct UpdateProfileRequest {
-    std::string user_id;
-    std::string full_name;
-    std::string phone_number;
+    std::string session_token;
+    std::string fullname;
     std::string email;
-    std::string address;
-    std::string pin_input;          // Mã PIN xác nhận thay đổi
+    std::string phone;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        UpdateProfileRequest,
-        user_id,
-        full_name,
-        phone_number,
-        email,
-        address,
-        pin_input
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(UpdateProfileRequest, session_token, fullname, email, phone)
 };
 
-// =============================================================
-// 3. STRUCT YÊU CẦU ĐỔI MẬT KHẨU (REQUEST DTO)
-// =============================================================
 struct ChangePasswordRequest {
-    std::string user_id;
+    std::string session_token;
     std::string old_password;
     std::string new_password;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        ChangePasswordRequest,
-        user_id,
-        old_password,
-        new_password
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(ChangePasswordRequest, session_token, old_password, new_password)
 };
 
-// =============================================================
-// 4. STRUCT YÊU CẦU ĐỔI MÃ PIN GIAO DỊCH (REQUEST DTO)
-// =============================================================
 struct ChangePinRequest {
-    std::string user_id;
+    std::string session_token;
     std::string old_pin;
     std::string new_pin;
-    std::string password_input;     // Mật khẩu xác nhận để đổi PIN
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        ChangePinRequest,
-        user_id,
-        old_pin,
-        new_pin,
-        password_input
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(ChangePinRequest, session_token, old_pin, new_pin)
 };
 
-// =============================================================
-// 5. STRUCT KẾT QUẢ TRUY VẤN HỒ SƠ NGƯỜI DÙNG (RESPONSE DTO)
-// =============================================================
-struct UserProfileResult {
+struct CustomerSearchRequest {
+    std::string session_token;
+    std::string query;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(CustomerSearchRequest, session_token, query)
+};
+
+struct UserOperationResult {
     bool success = false;
     std::string message;
-    UserProfileDTO profile;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        UserProfileResult,
-        success,
-        message,
-        profile
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(UserOperationResult, success, message)
 };
 
 } // namespace Banking

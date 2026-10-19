@@ -2,27 +2,32 @@
 #define TURSO_DB_HPP
 
 #include <string>
-#include "json.hpp" 
+#include <vector>
+#include <utility>
+#include <core/json.hpp>
+#include <curl/curl.h>
+
+namespace Banking {
 
 using json = nlohmann::json;
 
 class TursoDB {
 private:
-    std::string url;
-    std::string token;
+    std::string m_dbUrl;
+    std::string m_authToken;
 
-    // Callback hứng dữ liệu phản hồi từ HTTP
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 
-    // Gửi HTTP POST request tới Turso API
-    std::string sendHttpRequest(const std::string& json_payload);
-
 public:
-    // Constructor Khởi tạo
-    TursoDB(const std::string& db_url, const std::string& auth_token);
+    TursoDB(std::string dbUrl, std::string authToken);
 
-    // Phương thức thực thi câu lệnh SQL (Execute Query)
-    json execute(const std::string& sql_query);
+    // Thực thi 1 câu lệnh đơn có tham số (Parameterized Query)
+    json execute(const std::string& sql, const json& args = json::array());
+
+    // Thực thi danh sách câu lệnh trong 1 Transaction (Atomic Batch Execution)
+    json executeBatch(const std::vector<std::pair<std::string, json>>& statements);
 };
+
+} // namespace Banking
 
 #endif // TURSO_DB_HPP

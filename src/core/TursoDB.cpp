@@ -1,74 +1,93 @@
+#include "core/TursoDB.hpp"
 #include <iostream>
-#include "TursoDB.hpp"
-#include <curl/curl.h>
 
-// Constructor
-TursoDB::TursoDB(const std::string& db_url, const std::string& auth_token) {
-    this->url = db_url;
-    // Tự động đổi libsql:// thành https:// nếu có
-    if (this->url.find("libsql://") == 0) {
-        this->url.replace(0, 9, "https://");
-    }
-    this->token = auth_token;
-}
+namespace Banking {
 
-// Callback xử lý dữ liệu nhận về từ libcurl
 size_t TursoDB::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
+    size_t totalSize = size * nmemb;
+    auto* str = static_cast<std::string*>(userp);
+    str->append(static_cast<char*>(contents), totalSize);
+    return totalSize;
 }
 
-// Hàm gửi request POST
-std::string TursoDB::sendHttpRequest(const std::string& json_payload) {
+TursoDB::TursoDB(std::string dbUrl, std::string authToken)
+    : m_dbUrl(std::move(dbUrl)), m_authToken(std::move(authToken)) {}
+
+json TursoDB::execute(const std::string& sql, const json& args) {
+    return executeBatch({{sql, args}});
+}
+
+json TursoDB::executeBatch(const std::vector<std::pair<std::string, json>>& statements) {
     CURL* curl = curl_easy_init();
-    std::string response_data;
+    json responseJson = json::object();
 
-    if (curl) {
-        struct curl_slist* headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
-        
-        std::string auth_header = "Authorization: Bearer " + this->token;
-        headers = curl_slist_append(headers, auth_header.c_str());
+    if (!curl) {
+        std::cerr << "[TursoDB Error] Khởi tạo Curl thất bại!\n";
+        return responseJson;
+    }
 
-        std::string endpoint = this->url + "/v2/pipeline";
+    json requests = json::array();
 
-        curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_payload.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, TursoDB::WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
+    // 1. Mở Transaction nếu có nhiều câu lệnh
+    if (statements.size() > 1) {
+        requests.push_back({{"type", "execute"}, {"stmt", {{"sql", "BEGIN TRANSACTION;"}}}});
+    }
 
-        CURLcode res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            std::cerr << "Loi CURL: " << curl_easy_strerror(res) << std::endl;
+    // 2. Đưa các câu lệnh tham số hóa vào Pipeline API
+    for (const auto& [sql, args] : statements) {
+        json stmtObj = {{"sql", sql}};
+        if (!args.empty()) {
+            stmtObj["args"] = args;
         }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
+        requests.push_back({{"type", "execute"}, {"stmt", stmtObj}});
     }
-    return response_data;
-}
 
-// Thực thi câu lệnh SQL
-json TursoDB::execute(const std::string& sql_query) {
-    json payload = {
-        {"requests", json::array({
-            {
-                {"type", "execute"},
-                {"stmt", {{"sql", sql_query}}}
-            },
-            {
-                {"type", "close"}
-            }
-        })}
-    };
+    // 3. Đóng Transaction
+    if (statements.size() > 1) {
+        requests.push_back({{"type", "execute"}, {"stmt", {{"sql", "COMMIT;"}}}});
+    }
 
-    std::string raw_response = sendHttpRequest(payload.dump());
+    requests.push_back({{"type", "close"}});
+
+    json body = {{"requests", requests}};
+    std::string jsonPayload = body.dump();
+    std::string responseString;
+
+    struct curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    std::string authHeader = "Authorization: Bearer " + m_authToken;
+    headers = curl_slist_append(headers, authHeader.c_str());
+
+    std::string pipelineUrl = m_dbUrl + "/v2/pipeline";
+
+    curl_easy_setopt(curl, CURLOPT_URL, pipelineUrl.c_str());
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, jsonPayload.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseString);
     
-    try {
-        return json::parse(raw_response);
-    } catch (const json::parse_error& e) {
-        std::cerr << "Loi Parse JSON Response: " << e.what() << std::endl;
-        return json();
+    // Cấu hình Timeout an toàn
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L); // 5 giây kết nối
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);        // 10 giây phản hồi tổng
+
+    CURLcode res = curl_easy_perform(curl);
+    long httpCode = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+
+    if (res == CURLE_OK && httpCode == 200) {
+        try {
+            responseJson = json::parse(responseString);
+        } catch (const std::exception& e) {
+            std::cerr << "[TursoDB Parse Error] " << e.what() << "\n";
+        }
+    } else {
+        std::cerr << "[TursoDB HTTP Error] Code: " << httpCode << " | CurlMsg: " << curl_easy_strerror(res) << "\n";
     }
+
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
+
+    return responseJson;
 }
+
+} // namespace Banking
