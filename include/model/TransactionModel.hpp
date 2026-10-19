@@ -1,175 +1,117 @@
-#ifndef TRANSACTION_HPP
-#define TRANSACTION_HPP
+#ifndef TRANSACTION_MODEL_HPP
+#define TRANSACTION_MODEL_HPP
 
 #include <string>
-#include <memory>
-#include <utility>
-#include "security/AuthSecurity.hpp"
+#include <cstdint>
+#include "model/AccountModel.hpp"
+#include "model/BillModel.hpp"
 
-enum class BankCode {
-    OOPBANK,
-    VIETCOMBANK,
-    BIDV,
-    AGRIBANK,
-    TECHCOMBANK,
-    MBBANK,
-    VPBANK,
-    UNKNOWN
-};
+namespace Banking {
 
-class BankUtils {
-public:
-    static std::string toString(BankCode bank) {
-        switch (bank) {
-            case BankCode::OOPBANK:     return "OOPBANK";
-            case BankCode::VIETCOMBANK: return "VIETCOMBANK";
-            case BankCode::BIDV:        return "BIDV";
-            case BankCode::AGRIBANK:    return "AGRIBANK";
-            case BankCode::TECHCOMBANK: return "TECHCOMBANK";
-            case BankCode::MBBANK:      return "MBBANK";
-            case BankCode::VPBANK:      return "VPBANK";
-            default:                    return "UNKNOWN_BANK";
-        }
-    }
-
-    static BankCode parse(const std::string& bank_str) {
-        if (bank_str == "OOPBANK")     return BankCode::OOPBANK;
-        if (bank_str == "VIETCOMBANK") return BankCode::VIETCOMBANK;
-        if (bank_str == "BIDV")        return BankCode::BIDV;
-        if (bank_str == "AGRIBANK")    return BankCode::AGRIBANK;
-        if (bank_str == "TECHCOMBANK") return BankCode::TECHCOMBANK;
-        if (bank_str == "MBBANK")      return BankCode::MBBANK;
-        if (bank_str == "VPBANK")      return BankCode::VPBANK;
-        return BankCode::UNKNOWN;
-    }
-};
-// =============================================================
-// 1. LỚP CƠ SỞ TRANSACTION (ABSTRACT BASE CLASS)
-// =============================================================
+// =========================================================================
+// 1. BASE CLASS: Transaction (Command Interface)
+// =========================================================================
 class Transaction {
 protected:
-    std::string transaction_id;
-    std::string sender_account_id;
-    std::string receiver_account_id;
-    double amount = 0.0;
-    double fee = 0.0;
-    std::string status = "PENDING";
-    std::string description;
-
-    std::string generateTxnRef() {
-        AuthSecurity authSec;
-        return authSec.generateOTP(8);
-    }
+    std::string m_transactionId;
+    int64_t     m_amountVnd = 0;
+    int64_t     m_feeVnd = 0;
+    std::string m_description;
+    std::string m_status = "PENDING"; // "PENDING", "SUCCESS", "FAILED"
+    std::string m_createdAt;
 
 public:
-    Transaction(std::string sender, std::string receiver, double amt, std::string desc)
-        : transaction_id(generateTxnRef()), 
-          sender_account_id(std::move(sender)),
-          receiver_account_id(std::move(receiver)), 
-          amount(amt), 
-          description(std::move(desc)) {}
-    virtual bool execute();
-
+    Transaction(int64_t amountVnd, std::string desc);
     virtual ~Transaction() = default;
 
-    // Getters Read-Only
-    std::string getTransactionId() const { return transaction_id; }
-    std::string getSenderAccountId() const { return sender_account_id; }
-    std::string getReceiverAccountId() const { return receiver_account_id; }
-    double getAmount() const { return amount; }
-    double getFee() const { return fee; }
-    double getTotalDeduct() const { return amount + fee; } // Tổng tiền trừ = Số tiền + Phí
-    std::string getDescription() const { return description; }
-    std::string getStatus() const { return status; }
-    
-    void setStatus(const std::string& new_status) { status = new_status; }
+    // --- LOGIC THỰC THI NGHIỆP VỤ ĐA HÌNH ---
+    virtual bool process() = 0;
+    [[nodiscard]] virtual int64_t calculateFee() const = 0;
+    [[nodiscard]] virtual std::string getTransactionType() const = 0;
 
-    // --- CÁC HÀM ẢO TẬN DỤNG ĐA HÌNH ---
-    virtual std::string getTransactionType() const = 0;
-    virtual double calculateFee() const = 0;
+    [[nodiscard]] int64_t getTotalDeductVnd() const;
+    [[nodiscard]] const std::string& getTransactionId() const;
+    [[nodiscard]] int64_t getAmountVnd() const;
+    [[nodiscard]] int64_t getFeeVnd() const;
+    [[nodiscard]] const std::string& getStatus() const;
+    [[nodiscard]] const std::string& getDescription() const;
+    [[nodiscard]] const std::string& getCreatedAt() const;
 };
 
-// =============================================================
-// 2. LỚP CHUYỂN TIỀN (TRANSFER)
-// =============================================================
-class Transfer : public Transaction {
+// =========================================================================
+// 2. TRANSFER TRANSACTION (Chuyển tiền Nội bộ / Liên ngân hàng)
+// =========================================================================
+class TransferTransaction : public Transaction {
 private:
-    BankCode target_bank = BankCode::OOPBANK;
+    CheckingAccount& m_sender;
+    CheckingAccount& m_receiver;
+    bool             m_isInterbank = false;
 
 public:
-    Transfer(std::string sender, std::string receiver, double amt, std::string desc, BankCode bank = BankCode::OOPBANK)
-        : Transaction(std::move(sender), std::move(receiver), amt, std::move(desc)),
-          target_bank(bank) 
-    {
-        this->fee = calculateFee(); // Tự động tính phí khi khởi tạo
-    }
+    TransferTransaction(CheckingAccount& sender, CheckingAccount& receiver, int64_t amountVnd,
+                        std::string desc, bool isInterbank = false);
 
-    bool execute() override ;
+    bool process() override;
+    [[nodiscard]] int64_t calculateFee() const override;
+    [[nodiscard]] std::string getTransactionType() const override;
 
-    double calculateFee() const override {
-        if (target_bank == BankCode::OOPBANK) {
-            return 0.0; // Miễn phí chuyển tiền nội bộ
-        }
-        return 9900.0;  // Phí chuyển tiền liên ngân hàng
-    }
-
-    std::string getTransactionType() const override {
-        return (target_bank == BankCode::OOPBANK) ? "INTERNAL_TRANSFER" : "INTERBANK_TRANSFER";
-    }
-
-    BankCode getTargetBank() const { return target_bank; }
+    [[nodiscard]] const std::string& getSenderAccountId() const;
+    [[nodiscard]] const std::string& getReceiverAccountId() const;
 };
 
-// =============================================================
-// 3. LỚP RÚT TIỀN (WITHDRAW)
-// =============================================================
-class WithDraw : public Transaction {
+// =========================================================================
+// 3. DEPOSIT TRANSACTION (Nạp tiền mặt tại quầy)
+// =========================================================================
+class DepositTransaction : public Transaction {
 private:
-    BankCode atm_bank = BankCode::OOPBANK;
+    CheckingAccount& m_targetAccount;
 
 public:
-    WithDraw(std::string account_id, double amt, std::string desc, BankCode atm_location = BankCode::OOPBANK)
-        : Transaction(std::move(account_id), "ATM_" + BankUtils::toString(atm_location), amt, std::move(desc)),
-          atm_bank(atm_location) 
-    {
-        this->fee = calculateFee(); // Tự động tính phí khi khởi tạo
-    }
-    bool execute() override ;
+    DepositTransaction(CheckingAccount& targetAccount, int64_t amountVnd, std::string desc);
 
-    double calculateFee() const override {
-        if (atm_bank == BankCode::OOPBANK) {
-            return 0.0; // Rút ATM nội mạng miễn phí
-        }
-        return 3300.0;  // Rút ATM ngoại mạng
-    }
-
-    std::string getTransactionType() const override {
-        return (atm_bank == BankCode::OOPBANK) ? "ATM_WITHDRAW_INTERNAL" : "ATM_WITHDRAW_OFFNETWORK";
-    }
-
-    BankCode getAtmBank() const { return atm_bank; }
+    bool process() override;
+    [[nodiscard]] int64_t calculateFee() const override;
+    [[nodiscard]] std::string getTransactionType() const override;
+    [[nodiscard]] const std::string& getTargetAccountId() const;
 };
-// =============================================================
-// 4. LỚP NẠP TIỀN (DEPOSIT)
-// =============================================================
 
-class Deposit : public Transaction {
+// =========================================================================
+// 4. WITHDRAW TRANSACTION (Rút tiền mặt tại quầy / ATM)
+// =========================================================================
+class WithdrawTransaction : public Transaction {
+private:
+    CheckingAccount& m_sourceAccount;
+    bool             m_isAtmOffNetwork = false;
+
 public:
-    Deposit(std::string account_id, double amt, std::string desc)
-        : Transaction(std::move(account_id), "DEPOSIT", amt, std::move(desc)) 
-    {
-        this->fee = calculateFee(); // Tự động tính phí khi khởi tạo
-    }
+    WithdrawTransaction(CheckingAccount& sourceAccount, int64_t amountVnd,
+                        std::string desc, bool isAtmOffNetwork = false);
 
-    bool execute() override;
-
-    double calculateFee() const override {
-        return 0.0; // Nạp tiền miễn phí
-    }
-
-    std::string getTransactionType() const override {
-        return "DEPOSIT";
-    }
+    bool process() override;
+    [[nodiscard]] int64_t calculateFee() const override;
+    [[nodiscard]] std::string getTransactionType() const override;
+    [[nodiscard]] const std::string& getSourceAccountId() const;
 };
 
-#endif // TRANSACTION_HPP
+// =========================================================================
+// 5. BILL PAYMENT TRANSACTION (Thanh toán hóa đơn cước)
+// =========================================================================
+class BillPaymentTransaction : public Transaction {
+private:
+    CheckingAccount& m_payerAccount;
+    BillModel&       m_bill;
+
+public:
+    BillPaymentTransaction(CheckingAccount& payerAccount, BillModel& bill, std::string desc);
+
+    bool process() override;
+    [[nodiscard]] int64_t calculateFee() const override;
+    [[nodiscard]] std::string getTransactionType() const override;
+
+    [[nodiscard]] const std::string& getPayerAccountId() const;
+    [[nodiscard]] const std::string& getBillId() const;
+};
+
+} // namespace Banking
+
+#endif // TRANSACTION_MODEL_HPP

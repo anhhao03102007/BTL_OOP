@@ -1,0 +1,237 @@
+/* ============================================================
+   Biến màu / font / bóng đổ
+   ============================================================ */
+:root {
+  --cream: #f7f4ef;
+  --ivory: #fffdfa;
+  --sand: #efe8dc;
+  --espresso: #2c221e;
+  --coffee: #8b5e3c;
+  --caramel: #d4b996;
+  --taupe: #927e70;
+  --brown-muted: #685b53;
+
+  --font-sans: "DM Sans", sans-serif;
+  --font-display: "Playfair Display", serif;
+  --font-mono: "DM Mono", monospace;
+
+  --shadow-card: 0 12px 30px rgba(73, 51, 37, 0.06);
+  --shadow-card-hover: 0 20px 45px rgba(73, 51, 37, 0.12);
+
+  /* màu có độ trong suốt */
+  --caramel-45: rgba(212, 185, 150, 0.45);
+  --caramel-50: rgba(212, 185, 150, 0.5);
+  --caramel-55: rgba(212, 185, 150, 0.55);
+  --caramel-60: rgba(212, 185, 150, 0.6);
+  --caramel-70: rgba(212, 185, 150, 0.7);
+  --sand-60: rgba(239, 232, 220, 0.6);
+  --sand-70: rgba(239, 232, 220, 0.7);
+}
+
+/* ============================================================
+   Reset & nền
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--cream);
+  color: var(--espresso);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--caramel); color: var(--espresso); }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; cursor: pointer; border: 0; }
+[hidden] { display: none !important; }
+
+.i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.i-thin { stroke-width: 2; }
+.display { font-family: var(--font-display); }
+
+/* Vòng focus bàn phím */
+a:focus-visible, button:focus-visible { outline: 2px solid var(--coffee); outline-offset: 2px; }
+
+/* ============================================================
+   TRANG CHỦ
+   ============================================================ */
+.home { position: relative; min-height: 100vh; overflow: hidden; background: var(--cream); }
+.home-glow {
+  position: absolute; inset: 0 0 auto 0; height: 24rem; pointer-events: none;
+  background: radial-gradient(circle at top right, rgba(212, 185, 150, 0.32), transparent 48%);
+}
+.home-wrap {
+  position: relative; display: flex; flex-direction: column;
+  max-width: 80rem; min-height: 100vh; margin: 0 auto; padding: 0 1.25rem;
+}
+
+/* Header */
+.top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 0; border-bottom: 1px solid var(--caramel-50);
+}
+.brand { display: flex; align-items: center; gap: 0.75rem; border-radius: 999px; }
+.brand-mark {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.5rem; height: 2.5rem; border-radius: 50%;
+  background: var(--espresso); color: var(--ivory);
+  font: 600 0.875rem var(--font-display); transition: transform .2s;
+}
+.brand:hover .brand-mark { transform: rotate(6deg); }
+.brand-name { display: none; font-size: 0.875rem; font-weight: 700; letter-spacing: -0.025em; }
+.top-right { display: flex; align-items: center; gap: 0.75rem; }
+.date {
+  display: none; align-items: center; gap: 0.5rem;
+  font-size: 0.875rem; text-transform: capitalize; color: var(--brown-muted);
+}
+.divider { width: 1px; height: 1.75rem; background: var(--caramel-70); }
+.avatar {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.5rem; height: 2.5rem; border-radius: 50%;
+  border: 2px solid var(--ivory); background: var(--coffee); color: #fff;
+  font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 0 1px #D4B996;
+}
+
+/* Hero */
+.home-main { flex: 1; padding: 3.5rem 0 4rem; }
+.hero { display: grid; align-items: end; gap: 2.5rem; }
+.pill {
+  display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;
+  padding: 0.375rem 0.75rem; border-radius: 999px;
+  border: 1px solid var(--caramel-60); background: rgba(255, 253, 250, 0.7);
+  backdrop-filter: blur(8px); color: var(--coffee); font-size: 0.75rem; font-weight: 700;
+}
+.greet { margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--brown-muted); }
+.hero h1 {
+  max-width: 48rem; font: 600 3rem/1.03 var(--font-display);
+  letter-spacing: -0.045em; color: var(--espresso);
+}
+.hero h1 em { font-style: italic; color: var(--coffee); }
+.hero-side { max-width: 28rem; }
+.hero-side p { font-size: 1rem; line-height: 1.75rem; color: var(--brown-muted); }
+.count {
+  display: flex; align-items: center; gap: 0.75rem; margin-top: 1.25rem;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.16em; color: var(--taupe);
+}
+.count::before { content: ""; width: 2.5rem; height: 1px; background: var(--caramel); }
+
+/* Banner lời cảm ơn */
+.banner {
+  display: block; margin-top: 3rem; overflow: hidden; border-radius: 1.5rem;
+  border: 1px solid var(--caramel-55); background: var(--espresso); color: var(--ivory);
+  box-shadow: var(--shadow-card);
+}
+.banner-grid { display: grid; gap: 2rem; padding: 1.5rem; }
+.banner-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.75rem; height: 2.75rem; margin-bottom: 1.25rem;
+  border-radius: 1rem; background: rgba(255, 255, 255, 0.1); color: var(--caramel);
+}
+.kicker-light { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: var(--caramel); }
+.banner h2 {
+  max-width: 36rem; margin-top: 0.75rem;
+  font: 600 1.875rem/1.2 var(--font-display); letter-spacing: -0.025em;
+}
+.banner p { max-width: 36rem; margin-top: 1rem; font-size: 0.875rem; line-height: 1.5rem; color: rgba(239, 232, 220, 0.75); }
+/* Lưới công cụ */
+.tools { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1.25rem; }
+.card {
+  position: relative; display: flex; flex-direction: column; overflow: hidden;
+  min-height: 18rem; padding: 1.5rem; border-radius: 1.5rem;
+  border: 1px solid var(--caramel-55); background: var(--ivory); box-shadow: var(--shadow-card);
+  transition: transform .3s, border-color .3s, box-shadow .3s;
+}
+.card:hover { transform: translateY(-0.25rem); border-color: rgba(139, 94, 60, 0.35); box-shadow: var(--shadow-card-hover); }
+.card:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--cream), 0 0 0 6px var(--coffee); }
+.card-blob {
+  position: absolute; top: -4rem; right: -4rem; width: 11rem; height: 11rem;
+  border-radius: 50%; background: var(--sand-60); transition: transform .5s;
+}
+.card:hover .card-blob { transform: scale(1.25); }
+.card-top { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.card-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 3rem; height: 3rem; border-radius: 1rem;
+  border: 1px solid var(--caramel-60); background: var(--cream); color: var(--coffee);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.card-num { font: 400 0.75rem var(--font-mono); letter-spacing: 0.1em; color: var(--taupe); }
+.card-body { position: relative; margin-top: auto; padding-top: 2.5rem; }
+.card-label {
+  display: block; margin-bottom: 0.75rem; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.18em; color: var(--coffee);
+}
+.card h2 { font: 600 1.5rem/1.3 var(--font-display); letter-spacing: -0.025em; color: var(--espresso); }
+.card p { max-width: 32rem; margin-top: 0.75rem; font-size: 0.875rem; line-height: 1.5rem; color: var(--brown-muted); }
+.card-go { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem; font-size: 0.875rem; font-weight: 700; color: var(--espresso); }
+.card-go span {
+  display: flex; align-items: center; justify-content: center;
+  width: 2rem; height: 2rem; border-radius: 50%;
+  background: var(--espresso); color: var(--ivory); transition: transform .3s;
+}
+.card:hover .card-go span { transform: translate(0.25rem, -0.25rem); }
+
+/* Footer */
+.foot {
+  display: flex; flex-direction: column; gap: 0.5rem; padding: 1.75rem 0;
+  border-top: 1px solid var(--caramel-50); font-size: 0.75rem; color: var(--taupe);
+}
+
+/* Nút cài đặt + hộp thông báo trong banner */
+.install {
+  display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;
+  padding: 0.75rem 1.25rem; border-radius: 0.75rem;
+  background: var(--ivory); color: var(--espresso);
+  font-size: 0.875rem; font-weight: 700; transition: background-color .2s, transform .2s;
+}
+.install:hover { background: var(--sand); transform: translateY(-1px); }
+.install:focus-visible { outline: 2px solid var(--caramel); outline-offset: 3px; }
+.install-help {
+  max-width: 36rem; margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.08); font-size: 0.875rem; line-height: 1.5rem;
+  color: rgba(239, 232, 220, 0.85);
+}
+.install-help strong { color: var(--ivory); }
+
+/* ============================================================
+   RESPONSIVE (mobile-first)
+   ============================================================ */
+@media (min-width: 640px) {
+  .home-wrap { padding: 0 2rem; }
+  .top { padding: 1.5rem 0; }
+  .top-right { gap: 1.25rem; }
+  .brand-name { display: block; }
+  .home-main { padding-top: 5rem; }
+  .hero h1 { font-size: 3.75rem; }
+  .banner { margin-top: 4rem; }
+  .banner-grid { padding: 2rem; }
+  .banner h2 { font-size: 2.25rem; }
+    .tools { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+  .card { padding: 1.75rem; }
+  .card h2 { font-size: 1.7rem; }
+  .foot { flex-direction: row; align-items: center; justify-content: space-between; }
+
+}
+
+@media (min-width: 768px) {
+  .date { display: flex; }
+}
+
+@media (min-width: 1024px) {
+  .home-wrap { padding: 0 3rem; }
+  .hero { grid-template-columns: 1.45fr 0.55fr; }
+  .hero h1 { font-size: 4.5rem; }
+  .hero-side { justify-self: end; padding-bottom: 0.5rem; }
+  .banner-grid { padding: 2.5rem; }
+  .tools { grid-template-columns: repeat(3, 1fr); }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; }
+}

@@ -3,146 +3,95 @@
 
 #include <string>
 #include <vector>
-#include <Core ( Backend )/database/json.hpp>
+#include <cstdint>
+#include <core/json.hpp>
 
 namespace Banking {
 
-// =============================================================
-// 1. STRUCT BẢN GHI LỊCH SỬ GIAO DỊCH (TRANSACTION ITEM DTO)
-// =============================================================
-struct TransactionDTO {
-    std::string transaction_id;   // Mã giao dịch (VD: "TX_1729080000")
-    std::string sender_stk;       // Tài khoản nguồn
-    std::string receiver_stk;     // Tài khoản đích
-    double amount = 0.0;          // Số tiền giao dịch
-    double post_balance = 0.0;    // Số dư sau giao dịch
-    std::string description;      // Nội dung chuyển khoản
-    std::string transaction_type; // "TRANSFER", "DEPOSIT", "WITHDRAWAL", v.v.
-    std::string timestamp;        // Thời gian thực hiện (YYYY-MM-DD HH:MM:SS)
+using json = nlohmann::json;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        TransactionDTO,
-        transaction_id,
-        sender_stk,
-        receiver_stk,
-        amount,
-        post_balance,
-        description,
-        transaction_type,
-        timestamp
-    )
+struct LookupReceiverRequest {
+    std::string session_token;
+    std::string receiver_account_id;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(LookupReceiverRequest, session_token, receiver_account_id)
 };
 
-// =============================================================
-// 2. PHÂN ĐOẠN 1: BƯỚC TRA CỨU & XÁC THỰC TÀI KHOẢN ĐÍCH
-// =============================================================
-
-// Yêu cầu tra cứu thông tin tài khoản nhận từ UI
-struct VerifyAccountRequest {
-    std::string sender_stk;       // Tài khoản người gửi
-    std::string receiver_stk;     // Số tài khoản nhận nhập từ UI
-    std::string target_bank = "OOPBANK"; // Ngân hàng thụ hưởng
-
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        VerifyAccountRequest,
-        sender_stk,
-        receiver_stk,
-        target_bank
-    )
-};
-
-// Kết quả xác thực tài khoản nhận trả về UI để hiển thị tên chủ tài khoản
-struct VerifyAccountResult {
+struct LookupReceiverResult {
     bool success = false;
     std::string message;
-    std::string receiver_stk;     // Số tài khoản thụ hưởng
-    std::string receiver_name;    // Tên chủ tài khoản thụ hưởng (VD: "NGUYEN VAN A")
-    std::string target_bank;      // Tên ngân hàng thụ hưởng
+    std::string receiver_name;
+    std::string bank_name = "OOPBANK";
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        VerifyAccountResult,
-        success,
-        message,
-        receiver_stk,
-        receiver_name,
-        target_bank
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(LookupReceiverResult, success, message, receiver_name, bank_name)
 };
 
-// =============================================================
-// 3. PHÂN ĐOẠN 2 & 3: BƯỚC THỰC THI GIAO DỊCH (SỐ TIỀN + MÔ TẢ + PIN/OTP)
-// =============================================================
-
-// Yêu cầu Chuyển tiền hoàn chỉnh sau khi đã xác minh xong tài khoản nhận
 struct TransferRequest {
-    std::string sender_stk;
-    std::string receiver_stk;
-    std::string receiver_name;    // Tên người nhận đã được xác thực ở Bước 1
-    double balance=0.0;
-    std::string target_bank = "OOPBANK";
-    double amount = 0.0;          // Số tiền chuyển
-    std::string description;      // Lời nhắn / Mô tả
-    std::string pin_input;        // Mã PIN giao dịch xác nhận
-    std::string otp_input;        // Mã OTP xác thực (nếu có)
+    std::string session_token;
+    std::string idempotency_key;
+    std::string receiver_account_id;
+    int64_t     amount_vnd = 0;
+    std::string description;
+    std::string pin;
+    std::string otp;
+    bool        is_interbank = false;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        TransferRequest, 
-        sender_stk, 
-        receiver_stk, 
-        receiver_name,
-        balance,
-        target_bank, 
-        amount, 
-        description, 
-        pin_input, 
-        otp_input
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(TransferRequest, session_token, idempotency_key, receiver_account_id, amount_vnd, description, pin, otp, is_interbank)
 };
 
-// =============================================================
-// 4. STRUCT TRUYỀN TỪ SERVICE -> BRIDGE / UI (RESPONSE DTOs)
-// =============================================================
+struct CounterCashRequest {
+    std::string session_token;
+    std::string account_id;
+    int64_t     amount_vnd = 0;
+    std::string type; // "DEPOSIT" hoặc "WITHDRAW"
+    std::string description;
 
-// Kết quả biên lai trả về sau khi thực thi giao dịch thành công/thất bại
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(CounterCashRequest, session_token, account_id, amount_vnd, type, description)
+};
+
 struct TransactionResult {
     bool success = false;
-    std::string message;            // Thông báo lỗi hoặc thành công
-    std::string transaction_ref;    // Mã tham chiếu (FT2026...)
-    double amount = 0.0;            // Số tiền thực hiện
-    double fee_applied = 0.0;       // Phí giao dịch
-    double new_balance = 0.0;       // Số dư mới sau giao dịch
-    std::string timestamp;          // Thời gian thực hiện
+    std::string message;
+    std::string transaction_id;
+    int64_t post_balance_vnd = 0;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        TransactionResult,
-        success,
-        message,
-        transaction_ref,
-        amount,
-        fee_applied,
-        new_balance,
-        timestamp
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(TransactionResult, success, message, transaction_id, post_balance_vnd)
 };
 
-// Kết quả tra cứu lịch sử sao kê giao dịch từ Service
+struct TransactionHistoryRequest {
+    std::string session_token;
+    int page = 1;
+    int page_size = 10;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(TransactionHistoryRequest, session_token, page, page_size)
+};
+
+struct TransactionItemDTO {
+    std::string transaction_id;
+    std::string sender_account;
+    std::string receiver_account;
+    int64_t amount_vnd = 0;
+    int64_t fee_vnd = 0;
+    std::string type;
+    std::string status;
+    std::string description;
+    int64_t post_balance_vnd = 0;
+    std::string created_at;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(TransactionItemDTO, transaction_id, sender_account, receiver_account, amount_vnd, fee_vnd, type, status, description, post_balance_vnd, created_at)
+};
+
 struct TransactionHistoryResult {
     bool success = false;
     std::string message;
-    std::string stk;                // Số tài khoản tra cứu
-    size_t total_records = 0;       // Tổng số bản ghi tìm thấy
-    std::vector<TransactionDTO> transactions; // Danh sách biến động số dư
+    int total_items = 0;
+    int current_page = 1;
+    int total_pages = 1;
+    std::vector<TransactionItemDTO> items;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        TransactionHistoryResult,
-        success,
-        message,
-        stk,
-        total_records,
-        transactions
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(TransactionHistoryResult, success, message, total_items, current_page, total_pages, items)
 };
 
 } // namespace Banking
 
-#endif // BANKING_DTOS_HPP
+#endif // TRANSACTION_DTOS_HPP

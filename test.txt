@@ -1,0 +1,59 @@
+OOPBank/
+├── CMakeLists.txt
+├── .env
+├── .gitignore
+├── schema.sql
+├── include/
+│   ├── core/
+│   │   ├── TursoDB.hpp
+│   │   ├── SessionManager.hpp
+│   │   ├── AuthSecurity.hpp
+│   │   └── EnvLoader.hpp
+│   ├── models/
+│   │   ├── User.hpp
+│   │   ├── AccountModel.hpp
+│   │   ├── Transaction.hpp
+│   │   ├── BillModel.hpp
+│   │   ├── SavingsModel.hpp
+│   │   └── LoanModel.hpp
+│   ├── dtos/
+│   │   ├── AuthDTOs.hpp
+│   │   ├── AccountDTOs.hpp
+│   │   ├── TransactionDTOs.hpp
+│   │   ├── BillDTOs.hpp
+│   │   ├── SavingsDTOs.hpp
+│   │   ├── LoanDTOs.hpp
+│   │   └── StaffDTOs.hpp
+│   ├── repositories/
+│   │   ├── UserRepository.hpp
+│   │   ├── AccountRepository.hpp
+│   │   ├── TransactionRepository.hpp
+│   │   ├── BillRepository.hpp
+│   │   ├── SavingsRepository.hpp
+│   │   └── LoanRepository.hpp
+│   ├── services/
+│   │   ├── AuthService.hpp
+│   │   ├── AccountService.hpp
+│   │   ├── TransactionService.hpp
+│   │   ├── BillService.hpp
+│   │   ├── SavingsService.hpp
+│   │   ├── LoanService.hpp
+│   │   ├── TellerService.hpp
+│   │   └── AdminService.hpp
+│   └── bridge/
+│       ├── AuthBridge.hpp
+│       ├── TransactionBridge.hpp
+│       ├── BillBridge.hpp
+│       └── StaffBridge.hpp
+├── src/
+│   ├── main.cpp
+│   ├── core/
+│   ├── models/
+│   ├── repositories/
+│   ├── services/
+│   └── bridge/
+└── UI_Frontend/
+    ├── index.html
+    ├── style.css
+    ├── app.js
+    └── staff.js

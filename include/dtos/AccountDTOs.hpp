@@ -2,68 +2,53 @@
 #define ACCOUNT_DTOS_HPP
 
 #include <string>
-#include <memory>
 #include <vector>
-#include <Core_Backend/database/json.hpp>
+#include <cstdint>
+#include <core/json.hpp>
 
 namespace Banking {
 
-// =============================================================
-// 1. DTO THÔNG TIN TÀI KHOẢN THUẦN (DATA DTO)
-// =============================================================
+using json = nlohmann::json;
+
+// DTO biểu diễn thông tin tài khoản
 struct AccountDTO {
-    std::string stk;                   // Số tài khoản thanh toán
-    std::string user_id;               // Mã sở hữu
-    double balance = 0.0;              // Số dư hiện tại
-    std::string account_type;          // "CHECKING", "SAVINGS", "CREDIT"
-    std::string status;                // "ACTIVE", "LOCKED", "CLOSED"
+    std::string account_id;
+    std::string user_id;
+    int64_t     balance_vnd = 0;
+    std::string account_type; // "CHECKING", "SAVINGS"
+    std::string status;       // "ACTIVE", "LOCKED"
+    double      interest_rate = 0.0; // Lãi suất (%/năm nếu là tài khoản tiết kiệm)
     std::string created_at;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        AccountDTO,
-        stk,
-        user_id,
-        balance,
-        account_type,
-        status,
-        created_at
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(AccountDTO, account_id, user_id, balance_vnd, account_type, status, interest_rate, created_at)
 };
 
-// =============================================================
-// 2. KẾT QUẢ TRUY VẤN 1 TÀI KHOẢN (SINGLE ACCOUNT RESULT)
-// =============================================================
-struct AccountQueryResult {
-    bool success = false;              // Truy vấn CSDL có thành công không?
-    bool found = false;                // Có tìm thấy tài khoản không?
-    std::string message;               // Thông báo ("Thành công", "Không tìm thấy STK")
-    AccountDTO account;                // Dữ liệu tài khoản thuần (POD)
-
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        AccountQueryResult,
-        success,
-        found,
-        message,
-        account
-    )
-};
-
-// =============================================================
-// 3. KẾT QUẢ TRUY VẤN DANH SÁCH TÀI KHOẢN (LIST ACCOUNT RESULT)
-// =============================================================
-struct AccountListResult {
+// Kết quả lấy danh sách tài khoản
+struct GetAccountsResult {
     bool success = false;
     std::string message;
-    size_t total_count = 0;
-    std::vector<AccountDTO> accounts;  // Danh sách DTO thuần
+    std::vector<AccountDTO> accounts;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(
-        AccountListResult,
-        success,
-        message,
-        total_count,
-        accounts
-    )
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(GetAccountsResult, success, message, accounts)
+};
+
+// Yêu cầu Khóa / Mở khóa tài khoản khẩn cấp
+struct ToggleLockAccountRequest {
+    std::string session_token;
+    std::string account_id;
+    std::string pin;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(ToggleLockAccountRequest, session_token, account_id, pin)
+};
+
+// Kết quả thao tác tài khoản chung
+struct AccountOperationResult {
+    bool success = false;
+    std::string message;
+    std::string account_id;
+    int64_t     new_balance_vnd = 0;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(AccountOperationResult, success, message, account_id, new_balance_vnd)
 };
 
 } // namespace Banking
