@@ -2,13 +2,14 @@
 #define BILL_DTOS_HPP
 
 #include <string>
-#include <Core_Backend/database/json.hpp>
+#include <vector>
+#include <cstdint>
+#include <core/json.hpp>
 
 namespace Banking {
 
 using json = nlohmann::json;
 
-// 1. DTO Yêu cầu tra cứu hóa đơn
 struct QueryBillRequest {
     std::string session_token;
     std::string provider_id;
@@ -17,23 +18,37 @@ struct QueryBillRequest {
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(QueryBillRequest, session_token, provider_id, customer_code)
 };
 
-// 2. DTO Thông tin chi tiết hóa đơn
 struct BillDTO {
     std::string bill_id;
     std::string provider_id;
     std::string provider_name;
     std::string customer_code;
     std::string customer_name;
-    double amount = 0.0;
+    int64_t     amount_vnd = 0;
     std::string service_type;
     std::string status;
     std::string due_date;
     std::string period;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(BillDTO, bill_id, provider_id, provider_name, customer_code, customer_name, amount, service_type, status, due_date, period)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(BillDTO, bill_id, provider_id, provider_name, customer_code, customer_name, amount_vnd, service_type, status, due_date, period)
 };
 
-// 3. DTO Kết quả tra cứu
+struct BillProviderDTO {
+    std::string provider_id;
+    std::string provider_name;
+    std::string service_type;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(BillProviderDTO, provider_id, provider_name, service_type)
+};
+
+struct GetBillProvidersResult {
+    bool success = false;
+    std::string message;
+    std::vector<BillProviderDTO> providers;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(GetBillProvidersResult, success, message, providers)
+};
+
 struct QueryBillResult {
     bool success = false;
     std::string message;
@@ -42,23 +57,22 @@ struct QueryBillResult {
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(QueryBillResult, success, message, bill)
 };
 
-// 4. DTO Yêu cầu thanh toán hóa đơn
 struct PayBillRequest {
     std::string session_token;
+    std::string idempotency_key;
     std::string bill_id;
-    std::string pin; // Xác nhận mã PIN 6 số
+    std::string pin;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(PayBillRequest, session_token, bill_id, pin)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(PayBillRequest, session_token, idempotency_key, bill_id, pin)
 };
 
-// 5. DTO Kết quả thanh toán
 struct PayBillResult {
     bool success = false;
     std::string message;
     std::string transaction_id;
-    double post_balance = 0.0;
+    int64_t post_balance_vnd = 0;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(PayBillResult, success, message, transaction_id, post_balance)
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(PayBillResult, success, message, transaction_id, post_balance_vnd)
 };
 
 } // namespace Banking

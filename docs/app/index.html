@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Đăng nhập OOPBank để quản lý tài chính và sử dụng dịch vụ ngân hàng số." />
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <title>Đăng nhập | OOPBank</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="qwebchannel.js"></script>
+    <script>
+      globalThis.__OOPBANK_BRIDGES_READY__ = new Promise((resolve) => {
+        if (typeof QWebChannel === "undefined" || !globalThis.qt?.webChannelTransport) {
+          resolve();
+          return;
+        }
+        new QWebChannel(globalThis.qt.webChannelTransport, (channel) => {
+          globalThis.authBridge = channel.objects.authBridge ?? null;
+          globalThis.accountBridge = channel.objects.accountBridge ?? null;
+          globalThis.auditBridge = channel.objects.auditBridge ?? null;
+          globalThis.billBridge = channel.objects.billBridge ?? null;
+          globalThis.loanBridge = channel.objects.loanBridge ?? null;
+          globalThis.pageBridge = channel.objects.pageBridge ?? null;
+          globalThis.savingsBridge = channel.objects.savingsBridge ?? null;
+          globalThis.staffBridge = channel.objects.staffBridge ?? null;
+          globalThis.transactionBridge = channel.objects.transactionBridge ?? null;
+          globalThis.userBridge = channel.objects.userBridge ?? null;
+          resolve();
+        });
+      });
+    </script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

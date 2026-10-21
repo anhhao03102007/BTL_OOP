@@ -1,74 +1,110 @@
+#include "core/TursoDB.hpp"
+
+#include <QByteArray>
+#include <QEventLoop>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QTimer>
+#include <QUrl>
+
 #include <iostream>
-#include "TursoDB.hpp"
-#include <curl/curl.h>
+#include <utility>
 
-// Constructor
-TursoDB::TursoDB(const std::string& db_url, const std::string& auth_token) {
-    this->url = db_url;
-    // Tự động đổi libsql:// thành https:// nếu có
-    if (this->url.find("libsql://") == 0) {
-        this->url.replace(0, 9, "https://");
+namespace Banking {
+
+TursoDB::TursoDB(std::string dbUrl, std::string authToken)
+    : m_dbUrl(std::move(dbUrl)), m_authToken(std::move(authToken)) {}
+
+json TursoDB::execute(const std::string& sql, const json& args) {
+    return executeBatch({{sql, args}});
+}
+
+json TursoDB::executeBatch(const std::vector<std::pair<std::string, json>>& statements) {
+    json responseJson = json::object();
+    json requests = json::array();
+
+    // foreign_keys is scoped to each HTTP stream, so enable it for every pipeline.
+    requests.push_back({{"type", "execute"}, {"stmt", {{"sql", "PRAGMA foreign_keys = ON;"}}}});
+
+    if (statements.size() > 1) {
+        requests.push_back({{"type", "execute"}, {"stmt", {{"sql", "BEGIN TRANSACTION;"}}}});
     }
-    this->token = auth_token;
-}
 
-// Callback xử lý dữ liệu nhận về từ libcurl
-size_t TursoDB::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
-}
-
-// Hàm gửi request POST
-std::string TursoDB::sendHttpRequest(const std::string& json_payload) {
-    CURL* curl = curl_easy_init();
-    std::string response_data;
-
-    if (curl) {
-        struct curl_slist* headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
-        
-        std::string auth_header = "Authorization: Bearer " + this->token;
-        headers = curl_slist_append(headers, auth_header.c_str());
-
-        std::string endpoint = this->url + "/v2/pipeline";
-
-        curl_easy_setopt(curl, CURLOPT_URL, endpoint.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_payload.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, TursoDB::WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_data);
-
-        CURLcode res = curl_easy_perform(curl);
-        if (res != CURLE_OK) {
-            std::cerr << "Loi CURL: " << curl_easy_strerror(res) << std::endl;
+    for (const auto& [sql, args] : statements) {
+        json stmtObj = {{"sql", sql}};
+        if (!args.empty()) {
+            stmtObj["args"] = args;
         }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
+        requests.push_back({{"type", "execute"}, {"stmt", stmtObj}});
     }
-    return response_data;
-}
 
-// Thực thi câu lệnh SQL
-json TursoDB::execute(const std::string& sql_query) {
-    json payload = {
-        {"requests", json::array({
-            {
-                {"type", "execute"},
-                {"stmt", {{"sql", sql_query}}}
-            },
-            {
-                {"type", "close"}
+    if (statements.size() > 1) {
+        requests.push_back({{"type", "execute"}, {"stmt", {{"sql", "COMMIT;"}}}});
+    }
+    requests.push_back({{"type", "close"}});
+
+    const json body = {{"requests", requests}};
+    const QByteArray payload = QByteArray::fromStdString(body.dump());
+    QString endpoint = QString::fromStdString(m_dbUrl).trimmed();
+    if (endpoint.startsWith(QStringLiteral("libsql://"), Qt::CaseInsensitive)) {
+        endpoint.replace(0, 9, QStringLiteral("https://"));
+    }
+    while (endpoint.endsWith(QLatin1Char('/'))) {
+        endpoint.chop(1);
+    }
+    if (!endpoint.endsWith(QStringLiteral("/v2/pipeline"), Qt::CaseInsensitive)) {
+        endpoint += QStringLiteral("/v2/pipeline");
+    }
+    const QUrl url(endpoint);
+
+    QNetworkAccessManager manager;
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
+    request.setRawHeader("Authorization", QByteArray("Bearer ") + QByteArray::fromStdString(m_authToken));
+
+    QNetworkReply* reply = manager.post(request, payload);
+    QEventLoop eventLoop;
+    QTimer timeout;
+    bool timedOut = false;
+    timeout.setSingleShot(true);
+    QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
+    QObject::connect(&timeout, &QTimer::timeout, &eventLoop, [&]() {
+        timedOut = true;
+        reply->abort();
+    });
+    if (!reply->isFinished()) {
+        timeout.start(10000);
+        eventLoop.exec();
+        timeout.stop();
+    }
+
+    const int httpCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QNetworkReply::NetworkError networkError = reply->error();
+    const QString errorMessage = reply->errorString();
+    const QByteArray responseBody = reply->readAll();
+    delete reply;
+
+    if (networkError == QNetworkReply::NoError && httpCode == 200) {
+        try {
+            responseJson = json::parse(responseBody.toStdString());
+            if (!responseJson.contains("results") || !responseJson["results"].is_array() ||
+                responseJson["results"].empty() || !responseJson["results"][0].is_object() ||
+                responseJson["results"][0].value("type", "") != "ok") {
+                std::cerr << "[TursoDB] Could not enable foreign key enforcement\n";
+                return json::object();
             }
-        })}
-    };
-
-    std::string raw_response = sendHttpRequest(payload.dump());
-    
-    try {
-        return json::parse(raw_response);
-    } catch (const json::parse_error& e) {
-        std::cerr << "Loi Parse JSON Response: " << e.what() << std::endl;
-        return json();
+            // Hide the setup result so repository result indices remain unchanged.
+            responseJson["results"].erase(responseJson["results"].begin());
+        } catch (const std::exception& e) {
+            std::cerr << "[TursoDB Parse Error] " << e.what() << "\n";
+        }
+    } else {
+        std::cerr << "[TursoDB HTTP Error] Code: " << httpCode
+                  << " | " << (timedOut ? "Request timed out" : errorMessage.toStdString()) << "\n";
     }
+
+    return responseJson;
 }
+
+} // namespace Banking

@@ -1,92 +1,123 @@
-
-#ifndef ACCOUNT_HPP
-#define ACCOUNT_HPP
+#ifndef ACCOUNT_MODEL_HPP
+#define ACCOUNT_MODEL_HPP
 
 #include <string>
-#include "../../database/TursoDB.hpp"
+#include <cstdint>
 
+namespace Banking {
+
+// =========================================================================
+// 1. BASE CLASS: Account (Trừu tượng)
+// =========================================================================
 class Account {
-private:
-    std::string user_id;
-    std::string account_id;
-    double balance;
-    std::string currency;
-    std::string account_type;
-    int status;
-    std::string bank_code;
+protected:
+    std::string m_accountId;
+    std::string m_userId;
+    int64_t     m_balanceVnd = 0;
+    std::string m_status; // "ACTIVE", "BLOCKED", "CLOSED"
+    std::string m_createdAt;
 
 public:
-    Account();
+    Account(std::string accountId, std::string userId, int64_t balanceVnd,
+            std::string status, std::string createdAt);
 
-    Account(
-        const std::string& user_id,
-        const std::string& account_id,
-        double balance,
-        const std::string& currency,
-        const std::string& account_type,
-        int status,
-        const std::string& bank_code
-    );
+    virtual ~Account() = default;
 
-    std::string getUserId() const;
-    std::string getAccountId() const;
-    double getBalance() const;
-    std::string getCurrency() const;
-    std::string getAccountType() const;
-    int getStatus() const;
-    std::string getBankCode() const;
+    // Polymorphic Member Functions
+    [[nodiscard]] virtual bool canWithdraw(int64_t amountVnd) const = 0;
+    virtual bool withdraw(int64_t amountVnd) = 0;
+    virtual bool deposit(int64_t amountVnd) = 0;
+    [[nodiscard]] virtual std::string getAccountType() const = 0;
 
-    void setBalance(double balance);
-    void setStatus(int status);
-
+    [[nodiscard]] bool isActive() const;
+    [[nodiscard]] const std::string& getAccountId() const;
+    [[nodiscard]] const std::string& getUserId() const;
+    [[nodiscard]] int64_t getBalanceVnd() const;
 };
 
-class Savings_Account : public Account {
-private:
-    double Interest_rate;
-
-public:
-    Savings_Account();
-    double getInterestRate() const;
-    void setInterestRate(double rate);
-};
-
-class Term_Savings_Account : public Account {
-private:
-    int term_month;
-    int savings_id;
-    int Deposit_term;
-    double interest_Rate;
-    std::string maturity_option;
-
-public:
-    Term_Savings_Account();
-    int getTermMonth() const;
-    double getInterestRate() const;
-};
-
+// =========================================================================
+// 2. CHECKING ACCOUNT (Tài khoản Thanh toán / Thấu chi)
+// =========================================================================
 class CheckingAccount : public Account {
 private:
-    double overdraft_limit;
-    double daily_transfer_limit;
-    double current_spent_today;
+    int64_t m_overdraftLimitVnd = 0; // Hạn mức thấu chi cho phép số dư âm
 
 public:
-    CheckingAccount();
-    double getOverdraftLimit() const;
-    double getDailyTransferLimit() const;
+    CheckingAccount(std::string accountId, std::string userId, int64_t balanceVnd,
+                    std::string status, std::string createdAt, int64_t overdraftLimit = 0);
+
+    [[nodiscard]] bool canWithdraw(int64_t amountVnd) const override;
+    bool withdraw(int64_t amountVnd) override;
+    bool deposit(int64_t amountVnd) override;
+    [[nodiscard]] std::string getAccountType() const override;
 };
 
-class Credit_Account : public Account {
+// =========================================================================
+// 3. DEMAND SAVINGS ACCOUNT (Tiết kiệm Không kỳ hạn)
+// =========================================================================
+class DemandSavingsAccount : public Account {
 private:
-    double limit;
-    double current_debt_balance;
-    double overdue_interest;
+    double m_annualRate = 0.1; // Lãi suất không kỳ hạn cố định 0.1%/năm
 
 public:
-    Credit_Account();
-    double getLimit() const;
-    double getCurrentDebtBalance() const;
+    DemandSavingsAccount(std::string accountId, std::string userId, int64_t balanceVnd,
+                         std::string status, std::string createdAt);
+
+    [[nodiscard]] bool canWithdraw(int64_t amountVnd) const override;
+    bool withdraw(int64_t amountVnd) override;
+    bool deposit(int64_t amountVnd) override;
+    [[nodiscard]] int64_t calculateDailyInterest() const;
+    [[nodiscard]] std::string getAccountType() const override;
 };
 
-#endif
+// =========================================================================
+// 4. TERM SAVINGS ACCOUNT (Tiết kiệm Có kỳ hạn)
+// =========================================================================
+class TermSavingsAccount : public Account {
+private:
+    double      m_interestRate = 0.0;
+    int         m_termMonths = 0;
+    std::string m_maturityDate;
+    std::string m_maturityOption; // "RENEW_ALL", "CLOSE_TO_ACCOUNT"
+
+public:
+    TermSavingsAccount(std::string accountId, std::string userId, int64_t principalVnd,
+                       double rate, int termMonths, std::string maturityDate,
+                       std::string option, std::string status, std::string createdAt);
+
+    [[nodiscard]] bool canWithdraw(int64_t amountVnd) const override;
+    bool withdraw(int64_t amountVnd) override;
+    bool deposit(int64_t amountVnd) override;
+    [[nodiscard]] int64_t calculateMaturityInterest() const;
+    [[nodiscard]] int64_t calculateEarlyWithdrawalInterest(int actualDaysHeld) const;
+    [[nodiscard]] std::string getAccountType() const override;
+    [[nodiscard]] int64_t getOriginalAmountVnd() const;
+    [[nodiscard]] double getInterestRate() const;
+    [[nodiscard]] int getTermMonths() const;
+    [[nodiscard]] const std::string& getMaturityDate() const;
+    [[nodiscard]] const std::string& getMaturityOption() const;
+    [[nodiscard]] const std::string& getStatus() const;
+};
+
+// =========================================================================
+// 5. CREDIT ACCOUNT (Tài khoản Tín dụng)
+// =========================================================================
+class CreditAccount : public Account {
+private:
+    int64_t m_creditLimitVnd = 0; // Hạn mức tín dụng
+    double  m_interestRate = 0.0;  // Lãi suất phạt trả chậm
+
+public:
+    CreditAccount(std::string accountId, std::string userId, int64_t usedAmountVnd,
+                  int64_t creditLimitVnd, double rate, std::string status, std::string createdAt);
+
+    [[nodiscard]] bool canWithdraw(int64_t amountVnd) const override;
+    bool withdraw(int64_t amountVnd) override;
+    bool deposit(int64_t amountVnd) override;
+    [[nodiscard]] std::string getAccountType() const override;
+    [[nodiscard]] int64_t getAvailableCreditVnd() const;
+};
+
+} // namespace Banking
+
+#endif // ACCOUNT_MODEL_HPP
