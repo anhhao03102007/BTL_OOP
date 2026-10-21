@@ -60,7 +60,7 @@ target_include_directories(BankingSystem PRIVATE
 set(OOPBANK_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}" CACHE PATH
     "Runtime project directory containing .env and UI_Frontend")
 file(TO_CMAKE_PATH "${OOPBANK_PROJECT_ROOT}" OOPBANK_PROJECT_DIR)
-set(OOPBANK_UI_DIR "${OOPBANK_PROJECT_DIR}/UI_Frontend")
+set(OOPBANK_UI_DIR "${OOPBANK_PROJECT_DIR}/docs")
 string(REPLACE "#" "\\x23" OOPBANK_PROJECT_DIR_DEFINE "${OOPBANK_PROJECT_DIR}")
 string(REPLACE "#" "\\x23" OOPBANK_UI_DIR_DEFINE "${OOPBANK_UI_DIR}")
 target_compile_definitions(BankingSystem PRIVATE

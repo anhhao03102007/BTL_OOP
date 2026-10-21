@@ -48,7 +48,7 @@
 #endif
 
 #ifndef OOPBANK_UI_DIR
-#define OOPBANK_UI_DIR "UI_Frontend"
+#define OOPBANK_UI_DIR "."
 #endif
 
 namespace {
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) {
     };
     for (const QString& candidate : projectCandidates) {
         const QString normalized = QDir(candidate).absolutePath();
-        const QString candidateIndex = QDir(normalized).filePath(QStringLiteral("UI_Frontend/index.html"));
+        const QString candidateIndex = QDir(normalized).filePath(QStringLiteral("app/index.html"));
         if (QFileInfo::exists(candidateIndex)) {
             projectDirectory = normalized;
             break;
@@ -180,14 +180,13 @@ int main(int argc, char* argv[]) {
             QStringLiteral("Chưa có TURSO_URL/TURSO_TOKEN (hoặc TURSO_DATABASE_URL/TURSO_AUTH_TOKEN) trong .env hay biến môi trường. Giao diện sẽ mở bằng dữ liệu mẫu."));
     }
 
-    const QString uiIndex = QDir(QString::fromUtf8(OOPBANK_UI_DIR)).filePath(QStringLiteral("index.html"));
+    const QString uiIndex = QDir(QString::fromUtf8(OOPBANK_UI_DIR)).filePath(QStringLiteral("app/index.html"));
     if (!QFileInfo::exists(uiIndex)) {
         QMessageBox::critical(nullptr, QStringLiteral("Không tìm thấy giao diện"), uiIndex);
         return 1;
     }
 
     view.load(QUrl::fromLocalFile(uiIndex));
-    view.resize();
     view.show();
     return app.exec();
 }
